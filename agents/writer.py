@@ -10,7 +10,7 @@ def writer_node(state):
         return {"error": "No transcript available."}
 
     # UPDATED MODEL NAME FOR 2026
-    llm = ChatGoogleGenerativeAI(model="gemini-3-flash-preview")
+    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
 
     prompt = f"""
     You are a professional Content Creator. Rewrite this transcript into an engaging LinkedIn post.

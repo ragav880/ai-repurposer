@@ -4,3 +4,4 @@ langgraph
 yt-dlp
 moviepy
 python-dotenv
+youtube-transcript-api

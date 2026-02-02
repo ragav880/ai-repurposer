@@ -5,7 +5,7 @@ def analyst_node(state):
     transcript = state.get("transcript")
     
     # We use Gemini 3 for its reasoning capabilities
-    llm = ChatGoogleGenerativeAI(model="gemini-3-flash-preview")
+    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
 
     prompt = f"""
     Analyze the following video transcript. Your goal is to find a viral-worthy 30-second clip.
