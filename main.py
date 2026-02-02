@@ -1,7 +1,10 @@
 import streamlit as st
 import threading
 import os
+import json
 from graph import app
+
+RESULT_FILE = "job_result.json"
 
 # --------------------------------------------------
 # Page Config
@@ -13,46 +16,37 @@ st.set_page_config(
 )
 
 # --------------------------------------------------
-# Session State Init
+# Session State
 # --------------------------------------------------
-if "results" not in st.session_state:
-    st.session_state.results = None
-
 if "processing" not in st.session_state:
     st.session_state.processing = False
 
-if "job_done" not in st.session_state:
-    st.session_state.job_done = False
+if "results" not in st.session_state:
+    st.session_state.results = None
 
 if "error" not in st.session_state:
     st.session_state.error = None
 
-if "worker_result" not in st.session_state:
-    st.session_state.worker_result = None
-
 
 # --------------------------------------------------
-# Background Worker (NO Streamlit calls here!)
+# Background Worker (PURE PYTHON ONLY)
 # --------------------------------------------------
 def run_agents_worker(youtube_url: str):
     try:
-        initial_state = {"video_url": youtube_url}
-        result = app.invoke(initial_state)
+        result = app.invoke({"video_url": youtube_url})
 
-        # Store result ONLY as plain data
-        st.session_state.worker_result = result
-        st.session_state.job_done = True
+        with open(RESULT_FILE, "w") as f:
+            json.dump(result, f)
 
     except Exception as e:
-        st.session_state.error = str(e)
-        st.session_state.job_done = True
+        with open(RESULT_FILE, "w") as f:
+            json.dump({"error": str(e)}, f)
 
 
 # --------------------------------------------------
 # Title
 # --------------------------------------------------
 st.title("🎬 AI Video Repurposer")
-
 
 # --------------------------------------------------
 # Sidebar
@@ -73,14 +67,16 @@ with st.sidebar:
 
 
 # --------------------------------------------------
-# Start job (non-blocking)
+# Start Processing
 # --------------------------------------------------
 if start_clicked and youtube_url and not st.session_state.processing:
     st.session_state.processing = True
-    st.session_state.job_done = False
-    st.session_state.worker_result = None
     st.session_state.results = None
     st.session_state.error = None
+
+    # Remove old result file if exists
+    if os.path.exists(RESULT_FILE):
+        os.remove(RESULT_FILE)
 
     threading.Thread(
         target=run_agents_worker,
@@ -90,23 +86,27 @@ if start_clicked and youtube_url and not st.session_state.processing:
 
 
 # --------------------------------------------------
-# While processing
+# Poll for Result File
 # --------------------------------------------------
-if st.session_state.processing and not st.session_state.job_done:
+if st.session_state.processing:
     st.info("🤖 AI Agents are working… this may take a few minutes.")
 
+    if os.path.exists(RESULT_FILE):
+        with open(RESULT_FILE) as f:
+            data = json.load(f)
+
+        st.session_state.processing = False
+
+        if "error" in data:
+            st.session_state.error = data["error"]
+        else:
+            st.session_state.results = data
+
+        st.experimental_rerun()
+
 
 # --------------------------------------------------
-# Job completed → move result into UI state
-# --------------------------------------------------
-if st.session_state.processing and st.session_state.job_done:
-    st.session_state.processing = False
-    st.session_state.results = st.session_state.worker_result
-    st.experimental_rerun()   # 👈 CRITICAL
-
-
-# --------------------------------------------------
-# Error display
+# Error
 # --------------------------------------------------
 if st.session_state.error:
     st.error(f"❌ Error: {st.session_state.error}")
