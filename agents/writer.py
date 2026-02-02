@@ -9,7 +9,7 @@ def writer_node(state):
     if not transcript:
         return {"error": "No transcript available."}
 
-    # UPDATED MODEL NAME FOR 2026
+    # UPDATED MODEL NAME FOR 2026 hgh
     llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
 
     prompt = f"""
